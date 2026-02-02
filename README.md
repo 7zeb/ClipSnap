@@ -1,4 +1,4 @@
-#ClipSnap
+# ClipSnap
 
 
 
@@ -6,14 +6,14 @@ A lightweight screenshot tool for Windows 10/11 that automatically saves screens
 
 
 
-##Why ClipSnap?
+## Why ClipSnap?
 
 
 
 Windows 10's built-in screenshot tool (Win+Shift+S) doesn't automatically save screenshots to a folder - you have to manually paste and save them. Windows 11 added this feature, but Windows 10 users are left out. ClipSnap fixes this!
 
 
-##Features
+## Features
 
 
 
