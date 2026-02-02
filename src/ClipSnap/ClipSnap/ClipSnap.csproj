@@ -5,6 +5,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms> <!-- Add this line -->
     <ApplicationIcon>Resources\app-icon.ico</ApplicationIcon>
     <AssemblyName>ClipSnap</AssemblyName>
     <RootNamespace>ClipSnap</RootNamespace>
@@ -15,7 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" /> <!-- Changed from 8.0.0 to 8.0.5 -->
   </ItemGroup>
 
   <ItemGroup>
