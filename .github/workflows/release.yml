@@ -1,83 +1,168 @@
 name: Release
+
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+      - master
+  workflow_dispatch:  # Allows manual trigger from Actions tab
 
 jobs:
-  build-and-release:
+  build:
     runs-on: windows-latest
     
     strategy:
       matrix:
-        runtime: [win-x64, win-arm64]
-        include:
+        architecture:
           - runtime: win-x64
-            arch: x64
+            arch: AMD64
           - runtime: win-arm64
-            arch: arm64
+            arch: ARM64
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Get all history for versioning
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
 
-    - name: Get version from tag
-      id: get_version
+    - name: Generate version number
+      id: version
       shell: bash
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      run: |
+        # Generate version based on date and commit count
+        COMMIT_COUNT=$(git rev-list --count HEAD)
+        DATE_VERSION=$(date +'%Y.%m.%d')
+        VERSION="${DATE_VERSION}.${COMMIT_COUNT}"
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Version: ${VERSION}"
 
     - name: Restore dependencies
       run: dotnet restore src/ClipSnap/ClipSnap.sln
 
-    - name: Build Self-Contained
+    # Build Framework-Dependent
+    - name: Build Framework-Dependent (${{ matrix.architecture.arch }})
       run: |
         dotnet publish src/ClipSnap/ClipSnap/ClipSnap.csproj `
           --configuration Release `
-          --output ./publish/${{ matrix.runtime }} `
-          --runtime ${{ matrix.runtime }} `
+          --output ./publish/framework-dependent-${{ matrix.architecture.runtime }} `
+          --runtime ${{ matrix.architecture.runtime }} `
+          --self-contained false `
+          -p:PublishSingleFile=true `
+          -p:Version=${{ steps.version.outputs.VERSION }}
+
+    # Build Self-Contained
+    - name: Build Self-Contained (${{ matrix.architecture.arch }})
+      run: |
+        dotnet publish src/ClipSnap/ClipSnap/ClipSnap.csproj `
+          --configuration Release `
+          --output ./publish/self-contained-${{ matrix.architecture.runtime }} `
+          --runtime ${{ matrix.architecture.runtime }} `
           --self-contained true `
           -p:PublishSingleFile=true `
           -p:EnableCompressionInSingleFile=true `
           -p:IncludeNativeLibrariesForSelfExtract=true `
-          -p:Version=${{ steps.get_version.outputs.VERSION }}
+          -p:Version=${{ steps.version.outputs.VERSION }}
 
-    - name: Create ZIP archive
+    # Create ZIP archives
+    - name: Create ZIP archives
       shell: pwsh
       run: |
-        Compress-Archive -Path ./publish/${{ matrix.runtime }}/* -DestinationPath ./ClipSnap-${{ steps.get_version.outputs.VERSION }}-${{ matrix.runtime }}.zip
+        Compress-Archive -Path ./publish/framework-dependent-${{ matrix.architecture.runtime }}/* `
+          -DestinationPath ./ClipSnap-${{ steps.version.outputs.VERSION }}-${{ matrix.architecture.runtime }}.zip
+        
+        Compress-Archive -Path ./publish/self-contained-${{ matrix.architecture.runtime }}/* `
+          -DestinationPath ./ClipSnap-${{ steps.version.outputs.VERSION }}-${{ matrix.architecture.runtime }}-standalone.zip
 
-    - name: Upload artifact
+    # Upload artifacts for the release job
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ClipSnap-${{ matrix.runtime }}
-        path: ./ClipSnap-${{ steps.get_version.outputs.VERSION }}-${{ matrix.runtime }}.zip
+        name: ClipSnap-${{ matrix.architecture.runtime }}-${{ steps.version.outputs.VERSION }}
+        path: |
+          ./ClipSnap-${{ steps.version.outputs.VERSION }}-${{ matrix.architecture.runtime }}.zip
+          ./ClipSnap-${{ steps.version.outputs.VERSION }}-${{ matrix.architecture.runtime }}-standalone.zip
+        retention-days: 1
 
-  create-release:
-    needs: build-and-release
+    # Save version for release job
+    - name: Save version
+      shell: bash
+      run: echo "${{ steps.version.outputs.VERSION }}" > version.txt
+
+    - name: Upload version
+      uses: actions/upload-artifact@v4
+      with:
+        name: version-${{ matrix.architecture.runtime }}
+        path: version.txt
+        retention-days: 1
+
+  release:
+    needs: build
     runs-on: ubuntu-latest
     
     steps:
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: ./artifacts
 
+    - name: Get version
+      id: version
+      run: |
+        VERSION=$(cat ./artifacts/version-win-x64/version.txt)
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Version: ${VERSION}"
+
+    - name: Display structure of downloaded files
+      run: ls -R ./artifacts
+
+    - name: Collect release files
+      run: |
+        mkdir -p ./release-files
+        find ./artifacts -name "*.zip" -exec cp {} ./release-files/ \;
+        ls -lh ./release-files/
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        name: ClipSnap v${{ steps.get_version.outputs.VERSION }}
+        name: ClipSnap v${{ steps.version.outputs.VERSION }}
+        tag_name: v${{ steps.version.outputs.VERSION }}
         draft: false
         prerelease: false
         generate_release_notes: true
-        files: ./artifacts/**/*.zip
+        files: ./release-files/*.zip
+        body: |
+          ## ClipSnap v${{ steps.version.outputs.VERSION }}
+          
+          Auto-generated release from commit: ${{ github.sha }}
+          
+          ### Downloads
+          
+          #### AMD64 (x64) - Standard Intel/AMD processors
+          - **ClipSnap-${{ steps.version.outputs.VERSION }}-win-x64.zip** - Requires .NET 8 Runtime (~5 MB)
+          - **ClipSnap-${{ steps.version.outputs.VERSION }}-win-x64-standalone.zip** - Standalone, no runtime needed (~70 MB)
+          
+          #### ARM64 - Windows on ARM devices (Surface Pro X, etc.)
+          - **ClipSnap-${{ steps.version.outputs.VERSION }}-win-arm64.zip** - Requires .NET 8 Runtime (~5 MB)
+          - **ClipSnap-${{ steps.version.outputs.VERSION }}-win-arm64-standalone.zip** - Standalone, no runtime needed (~70 MB)
+          
+          ### Installation
+          1. Download the appropriate ZIP file for your processor architecture
+          2. Extract and run `ClipSnap.exe`
+          3. The app will minimize to your system tray
+          
+          Use **Win+Shift+S** or **Print Screen** to capture screenshots!
+          
+          ### Which version should I download?
+          - **Most users**: Download the `win-x64-standalone.zip` version
+          - **ARM64 devices** (Surface Pro X, Windows Dev Kit): Download `win-arm64-standalone.zip`
+          - **Smaller download** (if you have .NET 8 installed): Download non-standalone versions
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
