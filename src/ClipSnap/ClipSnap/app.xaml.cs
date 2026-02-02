@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Linq;
 using ClipSnap.Services;
 using ClipSnap.Views;
 using Hardcodet.Wpf.TaskbarNotification;
