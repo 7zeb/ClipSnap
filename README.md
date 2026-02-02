@@ -17,19 +17,19 @@ Windows 10's built-in screenshot tool (Win+Shift+S) doesn't automatically save s
 
 
 
-- 📸 \*\*Region Selection\*\* - Click and drag to capture any area of your screen
+- 📸 **Region Selection** - Click and drag to capture any area of your screen
 
-- 💾 \*\*Auto-Save\*\* - Screenshots are automatically saved to your configured folder
+- 💾 **Auto-Save** - Screenshots are automatically saved to your configured folder
 
-- 📋 \*\*Clipboard Copy\*\* - Optionally copy screenshots to clipboard (toggleable)
+- 📋 **Clipboard Copy** - Optionally copy screenshots to clipboard (toggleable)
 
-- ⌨️ \*\*Global Hotkeys\*\* - Win+Shift+S and Print Screen (configurable)
+- ⌨️ **Global Hotkeys** - Win+Shift+S and Print Screen (configurable)
 
-- 🖥️ \*\*Multi-Monitor Support\*\* - Works across all your displays
+- 🖥️ **Multi-Monitor Support** - Works across all your displays
 
-- 🚀 \*\*Start with Windows\*\* - Optional auto-start on login
+- 🚀 **Start with Windows** - Optional auto-start on login
 
-- 🎨 \*\*Modern UI\*\* - Clean, dark-themed settings interface
+- 🎨 **Modern UI** - Clean, dark-themed settings interface
 
 
 
