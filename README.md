@@ -89,7 +89,7 @@ Right-click the tray icon and select \*\*Settings\*\* to configure:
 
 ```bash
 
-cd src/ClipSnap
+cd src/ClipSnap/ClipSnap
 
 dotnet restore
 
@@ -103,7 +103,7 @@ dotnet build
 
 ```bash
 
-dotnet run --project ClipSnap
+dotnet run
 
 ```
 
