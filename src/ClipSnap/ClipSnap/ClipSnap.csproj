@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\app-icon.ico</ApplicationIcon>
+    <AssemblyName>ClipSnap</AssemblyName>
+    <RootNamespace>ClipSnap</RootNamespace>
+    <Version>1.0.0</Version>
+    <Authors>7Zeb</Authors>
+    <Description>A screenshot tool for Windows 10/11 that automatically saves screenshots to a folder</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\app-icon.ico" />
+    <Resource Include="Resources\tray-icon.ico" />
+  </ItemGroup>
+
+</Project>

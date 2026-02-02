@@ -1,0 +1,45 @@
+<Window x:Class="ClipSnap.Views.SelectionOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Cursor="Cross"
+        KeyDown="Window_KeyDown">
+    
+    <Grid x:Name="MainGrid">
+        <!-- Dark overlay -->
+        <Rectangle x:Name="DarkOverlay" Fill="#66000000"/>
+        
+        <!-- Selection rectangle (drawn in code-behind) -->
+        <Canvas x:Name="SelectionCanvas"/>
+        
+        <!-- Instructions -->
+        <Border Background="#CC000000" 
+                CornerRadius="8" 
+                Padding="15,10"
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Top"
+                Margin="0,50,0,0">
+            <TextBlock Text="Click and drag to select an area. Press Escape to cancel." 
+                       Foreground="White" 
+                       FontSize="14"/>
+        </Border>
+        
+        <!-- Dimension display -->
+        <Border x:Name="DimensionBorder"
+                Background="#CC000000" 
+                CornerRadius="4" 
+                Padding="8,4"
+                HorizontalAlignment="Left" 
+                VerticalAlignment="Top"
+                Visibility="Collapsed">
+            <TextBlock x:Name="DimensionText" 
+                       Foreground="White" 
+                       FontSize="12"
+                       FontFamily="Consolas"/>
+        </Border>
+    </Grid>
+</Window>
