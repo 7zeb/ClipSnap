@@ -1,6 +1,6 @@
 using System;
-using System.Windows;
 using System.Linq;
+using System.Windows;
 using ClipSnap.Services;
 using ClipSnap.Views;
 using Hardcodet.Wpf.TaskbarNotification;
@@ -21,6 +21,8 @@ namespace ClipSnap
         {
             base.OnStartup(e);
 
+            System.Diagnostics.Debug.WriteLine("[ClipSnap] Application starting...");
+
             // Initialize services
             _settingsService = new SettingsService();
             _settingsService.Load();
@@ -32,52 +34,69 @@ namespace ClipSnap
             // Create system tray icon
             _trayIcon = new TaskbarIcon
             {
-                Icon = new System.Drawing.Icon(GetResourceStream(new Uri("pack://application:,,,/Resources/tray-icon.ico")).Stream),
+                Icon = GetTrayIcon(),
                 ToolTipText = "ClipSnap - Screenshot Tool",
                 ContextMenu = CreateContextMenu()
             };
             _trayIcon.TrayMouseDoubleClick += (s, args) => OpenSettings();
 
-            // Initialize hotkey service
-            _hotkeyService = new HotkeyService();
-            _hotkeyService.HotkeyPressed += OnHotkeyPressed;
-            RegisterHotkeys();
+            // Initialize hotkey service AFTER UI thread is fully initialized
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                System.Diagnostics.Debug.WriteLine("[ClipSnap] Initializing hotkey service...");
+                _hotkeyService = new HotkeyService();
+                _hotkeyService.HotkeyPressed += OnHotkeyPressed;
+                RegisterHotkeys();
+            }), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
             // Ensure screenshots folder exists
             _settingsService.EnsureSaveFolderExists();
+
+            System.Diagnostics.Debug.WriteLine("[ClipSnap] Application started successfully");
         }
 
         private void RegisterHotkeys()
         {
-            if (_hotkeyService == null || _settingsService == null) return;
+            if (_hotkeyService == null || _settingsService == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[ClipSnap] Cannot register hotkeys - services not initialized");
+                return;
+            }
 
             _hotkeyService.UnregisterAll();
 
             var settings = _settingsService.CurrentSettings;
 
+            System.Diagnostics.Debug.WriteLine($"[ClipSnap] Registering hotkeys - WinShiftS: {settings.EnableWinShiftS}, PrintScreen: {settings.EnablePrintScreen}");
+
             if (settings.EnableWinShiftS)
             {
-                _hotkeyService.RegisterHotkey(1, settings.WinShiftSModifiers, settings.WinShiftSKey);
+                bool success = _hotkeyService.RegisterHotkey(1, settings.WinShiftSModifiers, settings.WinShiftSKey);
+                System.Diagnostics.Debug.WriteLine($"[ClipSnap] Win+Shift+S registration: {success}");
             }
 
             if (settings.EnablePrintScreen)
             {
-                _hotkeyService.RegisterHotkey(2, settings.PrintScreenModifiers, settings.PrintScreenKey);
+                bool success = _hotkeyService.RegisterHotkey(2, settings.PrintScreenModifiers, settings.PrintScreenKey);
+                System.Diagnostics.Debug.WriteLine($"[ClipSnap] Print Screen registration: {success}");
             }
         }
 
         public void ReregisterHotkeys()
         {
+            System.Diagnostics.Debug.WriteLine("[ClipSnap] Re-registering hotkeys...");
             RegisterHotkeys();
         }
 
         private void OnHotkeyPressed(object? sender, int hotkeyId)
         {
+            System.Diagnostics.Debug.WriteLine($"[ClipSnap] Hotkey {hotkeyId} triggered - taking screenshot");
             TakeScreenshot();
         }
 
         public void TakeScreenshot()
         {
+            System.Diagnostics.Debug.WriteLine("[ClipSnap] TakeScreenshot called");
             var overlay = new SelectionOverlay();
             overlay.Show();
         }
@@ -109,6 +128,26 @@ namespace ClipSnap
             return menu;
         }
 
+        private System.Drawing.Icon GetTrayIcon()
+        {
+            try
+            {
+                var iconUri = new Uri("pack://application:,,,/Resources/tray-icon.ico");
+                var streamInfo = GetResourceStream(iconUri);
+                if (streamInfo != null)
+                {
+                    return new System.Drawing.Icon(streamInfo.Stream);
+                }
+            }
+            catch
+            {
+                // Icon not found, use default
+            }
+
+            // Fallback to system default icon
+            return System.Drawing.SystemIcons.Application;
+        }
+
         private void OpenSettings()
         {
             var existingWindow = Current.Windows.OfType<MainWindow>().FirstOrDefault();
@@ -138,6 +177,7 @@ namespace ClipSnap
 
         private void ExitApplication()
         {
+            System.Diagnostics.Debug.WriteLine("[ClipSnap] Exiting application");
             _hotkeyService?.UnregisterAll();
             _hotkeyService?.Dispose();
             _trayIcon?.Dispose();
