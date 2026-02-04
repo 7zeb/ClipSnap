@@ -23,7 +23,7 @@
                 HorizontalAlignment="Center" 
                 VerticalAlignment="Top"
                 Margin="0,50,0,0">
-            <TextBlock Text="Click and drag to select an area. Press Escape to cancel." 
+            <TextBlock Text="Click and drag to select an area. Press Escape to cancel. This will auto-save and auto-copy!" 
                        Foreground="White" 
                        FontSize="14"/>
         </Border>
