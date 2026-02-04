@@ -34,15 +34,16 @@ namespace ClipSnap.Services
         {
             try
             {
-                // Create a message-only window to receive hotkey messages
+                // Create a regular hidden window (NOT message-only)
+                // Message-only windows (HWND_MESSAGE) don't receive WM_HOTKEY!
                 var parameters = new HwndSourceParameters("ClipSnapHotkeyWindow")
                 {
                     Width = 0,
                     Height = 0,
-                    PositionX = 0,
-                    PositionY = 0,
-                    WindowStyle = 0, // WS_POPUP - hidden window
-                    ParentWindow = new IntPtr(-3) // HWND_MESSAGE - message-only window
+                    PositionX = -100,
+                    PositionY = -100,
+                    WindowStyle = unchecked((int)0x80000000), // WS_POPUP
+                    ExtendedWindowStyle = 0x00000080 // WS_EX_TOOLWINDOW (won't show in taskbar)
                 };
 
                 _hwndSource = new HwndSource(parameters);
@@ -80,7 +81,7 @@ namespace ClipSnap.Services
             if (success)
             {
                 _registeredHotkeys[id] = (modifiers, key);
-                System.Diagnostics.Debug.WriteLine($"[HotkeyService] Registered hotkey {id}: Modifiers={modifiers:X}, Key={key:X}");
+                System.Diagnostics.Debug.WriteLine($"[HotkeyService] Registered hotkey {id}: Modifiers={modifiers:X}, Key={key:X} (VK={key})");
             }
             else
             {
@@ -90,7 +91,8 @@ namespace ClipSnap.Services
                 // Error 1409 means hotkey already registered by another app
                 if (error == 1409)
                 {
-                    MessageBox.Show($"The hotkey is already in use by another application.\nPlease choose a different hotkey in Settings.",
+                    string hotkeyName = id == 1 ? "Win+Shift+S" : id == 2 ? "Print Screen" : $"Hotkey {id}";
+                    MessageBox.Show($"The {hotkeyName} hotkey is already in use by another application.\n\nPlease disable it in Windows Settings or choose a different hotkey.",
                         "ClipSnap - Hotkey Registration Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
@@ -127,13 +129,14 @@ namespace ClipSnap.Services
             if (msg == WM_HOTKEY)
             {
                 int hotkeyId = wParam.ToInt32();
-                System.Diagnostics.Debug.WriteLine($"[HotkeyService] Hotkey {hotkeyId} pressed!");
+                System.Diagnostics.Debug.WriteLine($"[HotkeyService] WM_HOTKEY received! Hotkey ID: {hotkeyId}");
                 
                 // Invoke on UI thread to be safe
                 Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
+                    System.Diagnostics.Debug.WriteLine($"[HotkeyService] Invoking HotkeyPressed event for hotkey {hotkeyId}");
                     HotkeyPressed?.Invoke(this, hotkeyId);
-                }), DispatcherPriority.Normal);
+                }), DispatcherPriority.Send);
                 
                 handled = true;
             }

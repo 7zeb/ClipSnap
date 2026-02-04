@@ -13,8 +13,8 @@ namespace ClipSnap.Models
         // Clipboard
         public bool CopyToClipboard { get; set; } = true;
 
-        // Hotkey: Win+Shift+S
-        public bool EnableWinShiftS { get; set; } = true;
+        // Hotkey: Win+Shift+S (DISABLED by default - Windows uses this)
+        public bool EnableWinShiftS { get; set; } = false;
         public uint WinShiftSModifiers { get; set; } = 0x0008 | 0x0004; // MOD_WIN | MOD_SHIFT
         public uint WinShiftSKey { get; set; } = 0x53; // 'S' key
 
