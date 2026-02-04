@@ -14,13 +14,25 @@ namespace ClipSnap.Views
         private Rectangle? _selectionRectangle;
         private bool _isSelecting;
         private System.Drawing.Bitmap? _screenCapture;
+        
+        // DPI scaling factors
+        private double _dpiScaleX = 1.0;
+        private double _dpiScaleY = 1.0;
+        
+        // Virtual screen offset (for multi-monitor setups)
+        private int _virtualScreenX;
+        private int _virtualScreenY;
 
         public SelectionOverlay()
         {
             InitializeComponent();
             
-            // Cover all screens
+            // Get virtual screen bounds (covers all monitors)
             var virtualScreen = System.Windows.Forms.SystemInformation.VirtualScreen;
+            _virtualScreenX = virtualScreen.X;
+            _virtualScreenY = virtualScreen.Y;
+            
+            // Position window to cover all screens
             Left = virtualScreen.X;
             Top = virtualScreen.Y;
             Width = virtualScreen.Width;
@@ -29,9 +41,24 @@ namespace ClipSnap.Views
             // Capture the screen before showing overlay
             _screenCapture = App.Screenshot.CaptureAllScreens();
 
+            // Get DPI scaling after window is loaded
+            Loaded += OnLoaded;
+            
             MouseLeftButtonDown += OnMouseLeftButtonDown;
             MouseLeftButtonUp += OnMouseLeftButtonUp;
             MouseMove += OnMouseMove;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            // Get DPI scaling from the visual tree
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget != null)
+            {
+                _dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
+                _dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
+                System.Diagnostics.Debug.WriteLine($"[SelectionOverlay] DPI Scale: {_dpiScaleX}x{_dpiScaleY}");
+            }
         }
 
         private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -70,8 +97,10 @@ namespace ClipSnap.Views
             _selectionRectangle.Width = width;
             _selectionRectangle.Height = height;
 
-            // Update dimension display
-            DimensionText.Text = $"{(int)width} × {(int)height}";
+            // Update dimension display (show actual pixel dimensions)
+            var actualWidth = (int)(width * _dpiScaleX);
+            var actualHeight = (int)(height * _dpiScaleY);
+            DimensionText.Text = $"{actualWidth} × {actualHeight}";
             Canvas.SetLeft(DimensionBorder, x);
             Canvas.SetTop(DimensionBorder, y + height + 10);
         }
@@ -84,12 +113,20 @@ namespace ClipSnap.Views
 
             var currentPoint = e.GetPosition(this);
 
-            // Calculate selection bounds relative to virtual screen
-            var virtualScreen = System.Windows.Forms.SystemInformation.VirtualScreen;
-            var x = (int)Math.Min(_startPoint.X, currentPoint.X);
-            var y = (int)Math.Min(_startPoint.Y, currentPoint.Y);
-            var width = (int)Math.Abs(currentPoint.X - _startPoint.X);
-            var height = (int)Math.Abs(currentPoint.Y - _startPoint.Y);
+            // Calculate selection bounds in WPF coordinates
+            var wpfX = Math.Min(_startPoint.X, currentPoint.X);
+            var wpfY = Math.Min(_startPoint.Y, currentPoint.Y);
+            var wpfWidth = Math.Abs(currentPoint.X - _startPoint.X);
+            var wpfHeight = Math.Abs(currentPoint.Y - _startPoint.Y);
+
+            // Convert to physical pixels (accounting for DPI scaling)
+            var x = (int)(wpfX * _dpiScaleX);
+            var y = (int)(wpfY * _dpiScaleY);
+            var width = (int)(wpfWidth * _dpiScaleX);
+            var height = (int)(wpfHeight * _dpiScaleY);
+
+            System.Diagnostics.Debug.WriteLine($"[SelectionOverlay] WPF coords: ({wpfX}, {wpfY}) {wpfWidth}x{wpfHeight}");
+            System.Diagnostics.Debug.WriteLine($"[SelectionOverlay] Physical coords: ({x}, {y}) {width}x{height}");
 
             // Minimum size check
             if (width < 10 || height < 10)
@@ -106,6 +143,14 @@ namespace ClipSnap.Views
                 // Crop from pre-captured screen
                 if (_screenCapture != null)
                 {
+                    // Ensure we don't exceed bitmap bounds
+                    x = Math.Max(0, Math.Min(x, _screenCapture.Width - 1));
+                    y = Math.Max(0, Math.Min(y, _screenCapture.Height - 1));
+                    width = Math.Min(width, _screenCapture.Width - x);
+                    height = Math.Min(height, _screenCapture.Height - y);
+
+                    System.Diagnostics.Debug.WriteLine($"[SelectionOverlay] Cropping: ({x}, {y}) {width}x{height} from bitmap {_screenCapture.Width}x{_screenCapture.Height}");
+
                     var croppedBitmap = _screenCapture.Clone(
                         new System.Drawing.Rectangle(x, y, width, height),
                         _screenCapture.PixelFormat);
@@ -119,14 +164,14 @@ namespace ClipSnap.Views
                     // Save to file
                     var savedPath = App.Screenshot.SaveScreenshot(croppedBitmap);
                     
-                    // Show notification (optional - could use toast)
-                    System.Diagnostics.Debug.WriteLine($"Screenshot saved to: {savedPath}");
+                    System.Diagnostics.Debug.WriteLine($"[SelectionOverlay] Screenshot saved to: {savedPath}");
 
                     croppedBitmap.Dispose();
                 }
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[SelectionOverlay] Error: {ex.Message}");
                 MessageBox.Show($"Failed to capture screenshot: {ex.Message}",
                     "ClipSnap", MessageBoxButton.OK, MessageBoxImage.Error);
             }
