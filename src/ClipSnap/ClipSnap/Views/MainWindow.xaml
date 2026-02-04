@@ -141,8 +141,9 @@
                 
                 <!-- About -->
                 <TextBlock Text="About" Style="{StaticResource HeaderStyle}"/>
-                <TextBlock Text="ClipSnap v1.0.0" Foreground="#888888" FontSize="12"/>
+                <TextBlock Text="ClipSnap v2.0.0" Foreground="#888888" FontSize="12"/>
                 <TextBlock Text="A screenshot tool that automatically saves to a folder." 
+                <TextBlock Text="Made by 7Zeb."
                            Foreground="#666666" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"/>
                 
             </StackPanel>
