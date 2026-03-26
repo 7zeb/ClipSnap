@@ -49,7 +49,7 @@ Windows 10's built-in screenshot tool (Win+Shift+S) doesn't automatically save s
 
 
 
-1. Press \*\*Win+Shift+S\*\* or \*\*Print Screen\*\* to start a capture
+1. Press **Win+Shift+S** or **Print Screen** to start a capture
 
 2. Click and drag to select the area you want to capture
 
@@ -61,7 +61,7 @@ Windows 10's built-in screenshot tool (Win+Shift+S) doesn't automatically save s
 
 
 
-Right-click the tray icon and select \*\*Settings\*\* to configure:
+Right-click the tray icon and select **Settings** to configure:
 
 - Screenshot save folder
 
@@ -117,7 +117,7 @@ This project is licensed under the GNU General Public License v2.0 - see the \[L
 
 
 
-\## Contributing
+## Contributing
 
 
 
