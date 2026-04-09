@@ -27,7 +27,7 @@ Windows 10's built-in screenshot tool (Win+Shift+S) doesn't automatically save s
 
 - 🖥️ **Multi-Monitor Support** - Works across all your displays
 
-- 🚀 **Start with Windows** - Optional auto-start on login
+- 🚀 **Start with Windows** - Optional auto-start on login (might be broken)
 
 - 🎨 **Modern UI** - Clean, dark-themed settings interface
 
